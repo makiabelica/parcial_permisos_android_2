@@ -50,16 +50,17 @@ fun PhotoPreviewScreen(
 
         if (hasLocationPermission) {
             getCurrentLocation(context, fusedLocationClient) { loc ->
-                coroutineScope.launch { // Lanzar una corutina para ejecutar funciones de suspensión
+                coroutineScope.launch {
                     val address = getAddressFromCoordinates(context, loc.latitude, loc.longitude)
                     location = address ?: "${loc.latitude}, ${loc.longitude}" // Muestra la dirección o las coordenadas si no se encuentra
                 }
             }
         } else {
-            // Llamar al callback para solicitar permisos si no están otorgados
+            // Llamar a la función de solicitud de permisos con justificación desde el PermissionHandler
             onRequestLocationPermission()
         }
     }
+
 
     Scaffold(
         topBar = {

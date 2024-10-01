@@ -3,6 +3,7 @@ package com.example.galeriafotos.utils
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import android.location.Geocoder
 import android.net.Uri
 import androidx.activity.ComponentActivity
 import androidx.activity.result.ActivityResultLauncher
@@ -10,6 +11,10 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import java.io.File
+import androidx.appcompat.app.AlertDialog
+import androidx.core.app.ActivityCompat
+import java.util.Locale
+import kotlin.random.Random
 
 class PermissionHandler(private val activity: ComponentActivity) {
 
@@ -92,18 +97,45 @@ class PermissionHandler(private val activity: ComponentActivity) {
     }
 
     // Solicitar permiso de cámara
-    private fun requestCameraPermission() {
-        requestCameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+     fun requestCameraPermission() {
+        if (ActivityCompat.shouldShowRequestPermissionRationale(activity, Manifest.permission.CAMERA)) {
+            // Mostrar justificación antes de solicitar el permiso
+            showPermissionRationale(
+                Manifest.permission.CAMERA,
+                "La aplicación necesita acceso a la cámara para poder tomar fotos."
+            ) {
+                requestCameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+            }
+        } else {
+            // Solicitar el permiso directamente si no se necesita justificación
+            requestCameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+        }
     }
 
     // Solicitar permisos de ubicación
     fun requestLocationPermission() {
-        requestLocationPermissionLauncher.launch(
-            arrayOf(
+        if (ActivityCompat.shouldShowRequestPermissionRationale(activity, Manifest.permission.ACCESS_FINE_LOCATION)) {
+            // Mostrar justificación antes de solicitar el permiso de ubicación
+            showPermissionRationale(
                 Manifest.permission.ACCESS_FINE_LOCATION,
-                Manifest.permission.ACCESS_COARSE_LOCATION
+                "La aplicación necesita acceder a tu ubicación para mostrarte fotos cercanas."
+            ) {
+                requestLocationPermissionLauncher.launch(
+                    arrayOf(
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_COARSE_LOCATION
+                    )
+                )
+            }
+        } else {
+            // Solicitar el permiso directamente
+            requestLocationPermissionLauncher.launch(
+                arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                )
             )
-        )
+        }
     }
 
     // Verificar si un permiso está otorgado
@@ -120,4 +152,17 @@ class PermissionHandler(private val activity: ComponentActivity) {
             storageDir /* directory */
         )
     }
+    // Función para mostrar la justificación de permisos
+    private fun showPermissionRationale(permission: String, rationaleMessage: String, onProceed: () -> Unit) {
+        AlertDialog.Builder(activity)
+            .setTitle("Permiso requerido")
+            .setMessage(rationaleMessage)
+            .setPositiveButton("Aceptar") { _, _ ->
+                // Proceder a solicitar el permiso
+                onProceed()
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
 }

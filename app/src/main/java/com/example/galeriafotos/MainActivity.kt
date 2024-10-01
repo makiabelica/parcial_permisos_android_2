@@ -1,11 +1,14 @@
 package com.example.galeriafotos
 
+import android.Manifest
 import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AlertDialog
 import androidx.compose.runtime.Composable
+import androidx.core.app.ActivityCompat
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -26,7 +29,6 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        // Inicializar PermissionHandler
         permissionHandler = PermissionHandler(this)
 
         // Configurar los lanzadores con callbacks
@@ -60,7 +62,7 @@ class MainActivity : ComponentActivity() {
                         MainScreen(
                             photoRepository = photoRepository,
                             onCapturePhoto = {
-                                permissionHandler.capturePhoto()
+                                requestCameraPermission() // Llamamos a la nueva función de cámara con justificación
                             },
                             onSelectPhoto = {
                                 permissionHandler.selectPhoto()
@@ -70,7 +72,7 @@ class MainActivity : ComponentActivity() {
                     composable("capture_or_select_screen") {
                         CaptureOrSelectPhotoScreen(
                             onCapturePhoto = {
-                                permissionHandler.capturePhoto()
+                                requestCameraPermission() // Llamamos a la nueva función de cámara con justificación
                             },
                             onSelectPhoto = {
                                 permissionHandler.selectPhoto()
@@ -98,8 +100,7 @@ class MainActivity : ComponentActivity() {
                                 navController.popBackStack()
                             },
                             onRequestLocationPermission = {
-                                // Solicitar permisos de ubicación desde MainActivity
-                                permissionHandler.requestLocationPermission()
+                                requestLocationPermission() // Llamamos a la nueva función de ubicación con justificación
                             }
                         )
                     }
@@ -107,10 +108,48 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-}
 
-@Composable
-fun MainScreenSetup() {
-    val navController = rememberNavController()
+    // Función para mostrar la justificación de permisos
+    private fun showPermissionRationale(permission: String, message: String, onProceed: () -> Unit) {
+        AlertDialog.Builder(this)
+            .setTitle("Permiso requerido")
+            .setMessage(message)
+            .setPositiveButton("Aceptar") { _, _ ->
+                onProceed() // Proceder a solicitar el permiso
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
 
+    // Solicitar permiso de cámara
+    private fun requestCameraPermission() {
+        if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.CAMERA)) {
+            // Mostrar justificación antes de solicitar el permiso
+            showPermissionRationale(
+                Manifest.permission.CAMERA,
+                "La aplicación necesita acceso a la cámara para poder tomar fotos."
+            ) {
+                permissionHandler.requestCameraPermission() // Llamar al PermissionHandler para solicitar el permiso
+            }
+        } else {
+            // Solicitar el permiso directamente
+            permissionHandler.requestCameraPermission()
+        }
+    }
+
+    // Solicitar permiso de ubicación
+    private fun requestLocationPermission() {
+        if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_FINE_LOCATION)) {
+            // Mostrar justificación antes de solicitar el permiso de ubicación
+            showPermissionRationale(
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                "La aplicación necesita acceder a tu ubicación para mostrarte fotos cercanas."
+            ) {
+                permissionHandler.requestLocationPermission() // Llamar al PermissionHandler para solicitar el permiso
+            }
+        } else {
+            // Solicitar el permiso directamente
+            permissionHandler.requestLocationPermission()
+        }
+    }
 }
